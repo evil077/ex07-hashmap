@@ -1,0 +1,6 @@
+[submodule "csv15-lib"]
+	path = csv15-lib
+	url = https://github.com/vcc-csv15-fall2018/csv15-lib.git
+[submodule "githooks"]
+	path = githooks
+	url = https://github.com/vcc-csv15-fall2018/githooks.git
