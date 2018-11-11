@@ -196,12 +196,12 @@ TEST_F(HashMapTest, InsertFind) {
 
     TEST_F(HashMapTest, Rehash) {
         HashMap<size_t, size_t> map;
-        size_t capacity = map.capacity();
+        size_t capacity = map.bucket_count();
         for (size_t i = 0; i < capacity + 1; i++) {
             map[i] = i;
         }
         ASSERT_EQ(capacity+1, map.size());
-        ASSERT_LT(capacity+1, map.capacity());
+        ASSERT_LT(capacity+1, map.bucket_count());
         _testScore += 2;
         for (auto kp = map.begin(); kp != map.end(); kp++)  {
             ASSERT_EQ(kp->first, kp->second);
