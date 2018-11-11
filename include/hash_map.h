@@ -10,15 +10,18 @@
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
+#include <memory>
 
 namespace edu { namespace vcccd { namespace vc { namespace csv15 {
 
 template <class KeyType, class ValueType>
 class HashMap {
 public:
+    typedef std::pair<KeyType, ValueType> pair_type;
+
     class Iterator {
     public:
-        Iterator(std::pair<KeyType, ValueType> **first, std::pair<KeyType, ValueType> **last) {
+        Iterator(pair_type **first, pair_type **last) {
             _current = first;
             _last = last;
             _incrementToNextNonEmpty();
@@ -30,28 +33,38 @@ public:
         }
 
     public:
-        const std::pair<KeyType, ValueType> &operator*() {
+        pair_type &operator*() {
             return **_current;
         }
 
-        Iterator &operator++(int) {
+        pair_type *operator->() {
+            return *_current;
+        }
+
+        const Iterator operator++(int) {
             _current++;
             _incrementToNextNonEmpty();
             return *this;
         }
 
-        bool operator!=(const Iterator &that) {
-            return this->_current != that._current;
+        bool operator==(const Iterator &that) const {
+            return this->_current == that._current;
+        }
+
+        bool operator!=(const Iterator &that) const {
+            return !(*this == that);
         }
 
     private:
         void _incrementToNextNonEmpty() {
             for (; *_current == nullptr && _current != _last; _current++);
         }
+
     private:
-        std::pair<KeyType, ValueType> **_current;
-        std::pair<KeyType, ValueType> **_last;
+        pair_type **_current;
+        pair_type **_last;
     };
+
 public:
     static constexpr size_t DEFAULT_BUCKET_SIZE = 7;
     static constexpr size_t C1 = 11;
@@ -60,15 +73,17 @@ public:
 
 public:
     HashMap(): _capacity(DEFAULT_BUCKET_SIZE), _size(0) {
-        _buckets = new std::pair<KeyType, ValueType>*[DEFAULT_BUCKET_SIZE];
+        _buckets = new pair_type*[DEFAULT_BUCKET_SIZE];
         std::fill(_buckets, _buckets + _capacity, nullptr);
     }
 
     HashMap(const HashMap &other) {
-        _buckets = new std::pair<KeyType, ValueType>*[other._capacity];
+        _buckets = new pair_type*[other._capacity];
         _capacity = other._capacity;
         _size = other._size;
-        std::copy(other._buckets, other._buckets + _capacity, _buckets);
+        std::transform(other._buckets, other._buckets + _capacity, _buckets, [] (pair_type* bucket){
+            return bucket == nullptr ? bucket : new pair_type(*bucket);
+        });
     }
 
     HashMap(HashMap &&other) {
@@ -77,16 +92,29 @@ public:
         _size = other._size;
     }
 
-    ~HashMap() {
-        std::for_each(_buckets, _buckets+_capacity, [] (std::pair<KeyType, ValueType>* bucket) {
+    virtual ~HashMap() {
+        std::for_each(_buckets, _buckets+_capacity, [] (pair_type* bucket) {
             delete bucket;
         });
         delete [] _buckets;
     }
 
+    pair_type *&_find(const KeyType &key) {
+        size_t hashValue = _hash(key);
+        size_t index = hashValue % _capacity;
+        for(size_t i = 1; (_buckets[index] != nullptr && _buckets[index]->first != key) && i < _capacity; i++) {
+            index = (hashValue + C1 * i + C2 * i * i) % _capacity;
+        }
+        return _buckets[index];
+    }
+
 public:
-    ValueType find(const KeyType &key) {
-        return operator[](key);
+    Iterator find(const KeyType &key) {
+        pair_type *&item = _find(key);
+        if (item == nullptr) {
+            return end();
+        }
+        return Iterator(&item, _buckets + _capacity);
     }
 
     void insert(const KeyType &key, ValueType value) {
@@ -94,22 +122,19 @@ public:
     }
 
     ValueType &operator[](const KeyType &key) {
-        size_t hashValue = _hash(key);
-        size_t index = hashValue % _capacity;
-        for(size_t i = 1; (_buckets[index] != nullptr && _buckets[index]->first != key) && i < _capacity; i++) {
-            index = (hashValue + C1 * i + C2 * i * i) % _capacity;
-        }
+        pair_type *&item = _find(key);
         // We need to check if this is an insert
-        if (_buckets[index] == nullptr){
+        if (item == nullptr){
             _size++;
-            _buckets[index] = new std::pair<KeyType, ValueType>;
-            _buckets[index]->first = key;
+            item = new std::pair<KeyType, ValueType>;
+            item->first = key;
 
             if (1.0 * _size / _capacity > DEFAULT_LOAD) {
                 _rehash();
+                item = _find(key);
             }
         }
-        return _buckets[index]->second;
+        return item->second;
     }
 
     Iterator begin() {
@@ -124,12 +149,17 @@ public:
         // Put your code here
     }
 
+    size_t capacity() const {
+        // Put your code here
+    }
+
     bool empty() const {
         // Put your code here
     }
 
     Iterator erase(Iterator where) {
         // Put your code here
+        return where;
     }
 
     Iterator erase(Iterator first, Iterator end) {
@@ -141,7 +171,7 @@ public:
         return 0;
     }
 
-    void swap(const HashMap<KeyType, ValueType> &other) {
+    void swap(HashMap<KeyType, ValueType> &other) {
         // Put your code here
     }
 
@@ -158,6 +188,7 @@ private:
   std::pair<KeyType, ValueType> **_buckets;
   size_t _capacity;
   size_t _size;
+  size_t _hashSizeIndex = 0;
   std::hash<KeyType> _hash;
 };
 
