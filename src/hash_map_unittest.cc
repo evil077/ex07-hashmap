@@ -91,12 +91,121 @@ namespace {
     HashMap<std::string, uint> map1;
     ASSERT_EQ(0, map1.size());
     ASSERT_TRUE(map1.empty());
-    _testScore += 2;
+    _testScore += 1;
 
     HashMap<std::string, uint> map2(map1);
     ASSERT_EQ(0, map2.size());
     ASSERT_TRUE(map2.empty());
-    _testScore += 4;
+    _testScore += 1;
+
+    map1["test"] = 1;
+    ASSERT_EQ(1, map1.size());
+    ASSERT_EQ(0, map2.size());
+
+    _testScore += 1;
+
+    HashMap<std::string, uint> map3(map1);
+    ASSERT_EQ(1, map1.size());
+    ASSERT_EQ(1, map3.size());
+    ASSERT_EQ(0, map2.size());
+    ASSERT_EQ(1, map3["test"]);
+    _testScore += 1;
 }
 
+TEST_F(HashMapTest, InsertFind) {
+        HashMap<std::string, int> map1;
+        ASSERT_TRUE(map1.empty());
+        map1["key"] = 1;
+        ASSERT_EQ(1, map1["key"]);
+        ASSERT_EQ(1, map1.size());
+        ASSERT_FALSE(map1.empty());
+        _testScore += 1;
+
+        map1["key"] = 2;
+        ASSERT_EQ(2, map1["key"]);
+        ASSERT_EQ(1, map1.size());
+        _testScore += 1;
+
+        auto found = map1.find("key");
+        ASSERT_EQ(2, found->second);
+
+        _testScore += 1;
+
+        auto notFound = map1.find("test");
+        ASSERT_EQ(map1.end(), notFound);
+
+        _testScore += 1;
+
+        map1.insert("test",  4);
+        ASSERT_EQ(4, map1["test"]);
+
+        _testScore += 1;
+    }
+
+    TEST_F(HashMapTest, Erase) {
+        HashMap<std::string, uint> map1;
+        map1["key"] = 1;
+        map1["test"] = 2;
+        ASSERT_EQ(2, map1.size());
+
+        map1.erase(map1.find("key"));
+        ASSERT_EQ(1, map1.size());
+        ASSERT_EQ(map1.end(), map1.find("key"));
+        ASSERT_EQ(2, map1["test"]);
+
+        _testScore += 1;
+
+        map1.clear();
+        ASSERT_EQ(0, map1.size());
+        ASSERT_EQ(map1.end(), map1.find("key"));
+        ASSERT_EQ(map1.end(), map1.find("test"));
+
+        _testScore += 1;
+
+        map1["test1"] = 10;
+        map1["key1"] = 11;
+        ASSERT_EQ(10, map1["test1"]);
+        map1.erase(map1.begin(), map1.begin()++);
+        ASSERT_EQ(1, map1.size());
+        ASSERT_EQ(11, map1["key1"]);
+        ASSERT_EQ(map1.end(), map1.find("test1"));
+
+        _testScore += 1;
+
+        ASSERT_EQ(0, map1.erase("test1"));
+        ASSERT_EQ(1, map1.erase("key1"));
+        ASSERT_EQ(0, map1.size());
+        ASSERT_TRUE(map1.empty());
+
+        _testScore += 1;
+
+    }
+
+    TEST_F(HashMapTest, Swap) {
+        HashMap<std::string, uint> map1, map2;
+        map1["key"] = 12;
+        ASSERT_EQ(1, map1.size());
+        ASSERT_EQ(0, map2.size());
+        map1.swap(map2);
+        ASSERT_EQ(0, map1.size());
+        ASSERT_EQ(1, map2.size());
+        ASSERT_EQ(12, map2["key"]);
+        ASSERT_EQ(map1.end(), map1.find("key"));
+        _testScore += 2;
+    }
+
+    TEST_F(HashMapTest, Rehash) {
+        HashMap<size_t, size_t> map;
+        size_t capacity = map.capacity();
+        for (size_t i = 0; i < capacity + 1; i++) {
+            map[i] = i;
+        }
+        ASSERT_EQ(capacity+1, map.size());
+        ASSERT_LT(capacity+1, map.capacity());
+        _testScore += 2;
+        for (auto kp = map.begin(); kp != map.end(); kp++)  {
+            ASSERT_EQ(kp->first, kp->second);
+        }
+        _testScore += 3;
+    }
 }
