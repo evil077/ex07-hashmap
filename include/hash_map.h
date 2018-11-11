@@ -91,7 +91,7 @@ public:
         });
     }
 
-    HashMap(HashMap &&other) {
+    HashMap(HashMap &&other) noexcept {
         _buckets = other._buckets;
         _capacity = other._capacity;
         _size = other._size;
