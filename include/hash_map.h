@@ -154,7 +154,7 @@ public:
         // Put your code here
     }
 
-    size_t capacity() const {
+    size_t bucket_count() const {
         // Put your code here
     }
 
