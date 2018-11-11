@@ -47,6 +47,11 @@ public:
             return *this;
         }
 
+        Iterator &operator=(pair_type *p) {
+            *_current = p;
+            return *this;
+        }
+
         bool operator==(const Iterator &that) const {
             return this->_current == that._current;
         }
